@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "bsp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define RADIO_RECEIVE_PRIO 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -106,6 +107,8 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  radioInit();
+//  escInit();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -130,7 +133,7 @@ int main(void)
   initTaskHandle = osThreadCreate(osThread(initTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -426,7 +429,13 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart3)
+	{
+		radioUartRxCpltCallback();
+	}
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartInitTask */
@@ -439,11 +448,7 @@ static void MX_GPIO_Init(void)
 void StartInitTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+	vTaskDelete(NULL);
   /* USER CODE END 5 */
 }
 
