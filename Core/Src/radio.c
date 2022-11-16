@@ -10,8 +10,6 @@
 SemaphoreHandle_t radioSemaphore;
 RADIO_MessageType radioMessage;
 
-uint16_t testVal = 0u;
-
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray);
 
 void radioInit()
@@ -76,22 +74,25 @@ static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
 	return retVal;
 }
 
-void radioUartRxCpltCallback()
+void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(!radioMessage.dataReceived)
+	if(huart == &huart3)
 	{
-		if(radioMessage.length == 32u)
+		if(!radioMessage.dataReceived)
 		{
-			HAL_UART_Receive_IT(&huart3, radioMessage.rxBuffer, radioMessage.length - 1);
-			radioMessage.dataReceived = 1u;
+			if(radioMessage.length == 32u)
+			{
+				HAL_UART_Receive_IT(&huart3, radioMessage.rxBuffer, radioMessage.length - 1);
+				radioMessage.dataReceived = 1u;
+			}
 		}
-	}
-	else
-	{
-		radioMessage.dataReceived = 0u;
-		BaseType_t higherPriorityTaskWoken = pdFALSE;
-		xSemaphoreGiveFromISR(radioSemaphore, &higherPriorityTaskWoken);
-		portYIELD_FROM_ISR(higherPriorityTaskWoken);
+		else
+		{
+			radioMessage.dataReceived = 0u;
+			BaseType_t higherPriorityTaskWoken = pdFALSE;
+			xSemaphoreGiveFromISR(radioSemaphore, &higherPriorityTaskWoken);
+			portYIELD_FROM_ISR(higherPriorityTaskWoken);
+		}
 	}
 }
 

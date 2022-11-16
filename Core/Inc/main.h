@@ -59,6 +59,16 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define CS_ACCEL_Pin GPIO_PIN_4
+#define CS_ACCEL_GPIO_Port GPIOA
+#define CS_GYRO_Pin GPIO_PIN_4
+#define CS_GYRO_GPIO_Port GPIOC
+#define DRDY_ACC_Pin GPIO_PIN_5
+#define DRDY_ACC_GPIO_Port GPIOC
+#define DRDY_ACC_EXTI_IRQn EXTI9_5_IRQn
+#define DRDY_GYRO_Pin GPIO_PIN_0
+#define DRDY_GYRO_GPIO_Port GPIOB
+#define DRDY_GYRO_EXTI_IRQn EXTI0_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
