@@ -11,11 +11,13 @@ SemaphoreHandle_t radioSemaphore;
 RADIO_MessageType radioMessage;
 
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray);
+static void radioReceiveTask(void *param);
 
 void radioInit()
 {
 	radioMessage.dataReceived = 0u;
 	radioSemaphore = xSemaphoreCreateBinary();
+	xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
 }
 
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
@@ -96,7 +98,7 @@ void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
-void radioReceiveTask(void *param)
+static void radioReceiveTask(void *param)
 {
 	while(1)
 	{

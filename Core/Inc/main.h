@@ -70,7 +70,10 @@ void Error_Handler(void);
 #define DRDY_GYRO_GPIO_Port GPIOB
 #define DRDY_GYRO_EXTI_IRQn EXTI0_IRQn
 /* USER CODE BEGIN Private defines */
+#define RADIO_RECEIVE_PRIO		1
 
+#define IMU_ACC_RECEIVE_PRIO	6
+#define IMU_GYRO_RECEIVE_PRIO	6
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

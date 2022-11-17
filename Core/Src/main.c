@@ -32,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RADIO_RECEIVE_PRIO 1
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -136,7 +136,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of initTask */
-  osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 128);
+  osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 256);
   initTaskHandle = osThreadCreate(osThread(initTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -558,10 +558,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(DRDY_GYRO_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 6, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 6, 0);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
@@ -601,7 +601,6 @@ void StartInitTask(void const * argument)
 //	escInit();
 	radioInit();
 	imuInit();
-	xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
 	vTaskDelete(NULL);
   /* USER CODE END 5 */
 }

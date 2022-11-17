@@ -8,10 +8,14 @@
 #ifndef INC_IMU_H_
 #define INC_IMU_H_
 
+typedef enum IMU_TxOrRxType_ {
+	Rx,
+	Tx
+} IMU_TxOrRxType;
+
 typedef struct IMU_HandleType_ {
-	uint8_t transmitOrReceiveFlag;  // 0 if receive, 1 if transmit
+	IMU_TxOrRxType transmitOrReceiveFlag;
 	volatile uint8_t regAddrSentFlag;
-	volatile uint8_t txRxFinishedFlag;
 	volatile HAL_StatusTypeDef txRxRetVal;
 	uint8_t *regData;
 	uint16_t len;

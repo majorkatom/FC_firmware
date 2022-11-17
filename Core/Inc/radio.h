@@ -31,6 +31,5 @@ extern UART_HandleTypeDef huart3;
 
 void radioInit();
 void radioUartRxCpltCallback(UART_HandleTypeDef *huart);
-void radioReceiveTask(void *param);
 
 #endif /* INC_RADIO_H_ */
