@@ -46,6 +46,7 @@ DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 DMA_HandleTypeDef hdma_tim1_ch1;
 DMA_HandleTypeDef hdma_tim1_ch2;
 DMA_HandleTypeDef hdma_tim1_ch3;
@@ -67,6 +68,7 @@ static void MX_UART4_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM2_Init(void);
 void StartInitTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -111,10 +113,9 @@ int main(void)
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_SPI1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
-  radioInit();
-//  escInit();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -135,11 +136,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of initTask */
-  osThreadDef(initTask, StartInitTask, osPriorityNormal, 0, 128);
+  osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 128);
   initTaskHandle = osThreadCreate(osThread(initTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
+
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -337,6 +338,51 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 169;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4.294967295E9;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -480,17 +526,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CS_ACCEL_GPIO_Port, CS_ACCEL_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(CS_ACC_GPIO_Port, CS_ACC_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(CS_GYRO_GPIO_Port, CS_GYRO_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : CS_ACCEL_Pin */
-  GPIO_InitStruct.Pin = CS_ACCEL_Pin;
+  /*Configure GPIO pin : CS_ACC_Pin */
+  GPIO_InitStruct.Pin = CS_ACC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(CS_ACCEL_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(CS_ACC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CS_GYRO_Pin */
   GPIO_InitStruct.Pin = CS_GYRO_Pin;
@@ -521,9 +567,24 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	imuGpioExtiCallback(GPIO_Pin);
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	radioUartRxCpltCallback(huart);
+}
+
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+	imuSpiTxCpltCallback(hspi);
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+	imuSpiRxCpltCallback(hspi);
 }
 /* USER CODE END 4 */
 
@@ -537,6 +598,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void StartInitTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+//	escInit();
+	radioInit();
+	imuInit();
+	xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
 	vTaskDelete(NULL);
   /* USER CODE END 5 */
 }

@@ -24,11 +24,13 @@ typedef enum IMU_StatusType_{
 	IMU_INIT_FAILED
 } IMU_StatusType;
 
+// TODO: remove huart4 extern
+extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim2;
 
 IMU_StatusType imuInit();
-void imuDelayUs(uint32_t period, void* intf_ptr);
+void imuDelayUs(uint32_t period, void* intfPtr);
 void imuGpioExtiCallback(uint16_t GPIO_Pin);
 void imuSpiTxCpltCallback(SPI_HandleTypeDef * hspi);
 void imuSpiRxCpltCallback(SPI_HandleTypeDef * hspi);

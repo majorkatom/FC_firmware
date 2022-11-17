@@ -59,8 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define CS_ACCEL_Pin GPIO_PIN_4
-#define CS_ACCEL_GPIO_Port GPIOA
+#define CS_ACC_Pin GPIO_PIN_4
+#define CS_ACC_GPIO_Port GPIOA
 #define CS_GYRO_Pin GPIO_PIN_4
 #define CS_GYRO_GPIO_Port GPIOC
 #define DRDY_ACC_Pin GPIO_PIN_5
