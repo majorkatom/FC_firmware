@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "cmsis_os.h"
+#include "bmi08x.h"
 
 #include "radio.h"
 #include "esc.h"

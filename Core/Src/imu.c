@@ -6,16 +6,12 @@
  */
 
 #include "bsp.h"
-#include "bmi08x.h"
-// TODO: remove stdio.h and string.h include
-#include <stdio.h>
-#include <string.h>
 
 struct bmi08x_dev imuDev;
 uint8_t imuAccDevAddr = 0u;
 uint8_t imuGyroDevAddr = 0u;
-const double imuAccConversionCoeff = 6000.0 / 32768.0;
-const double imuGyroConversionCoeff = 2000.0 / 32768.0;
+const float imuAccConversionCoeff = 6000.0 / 32768.0;
+const float imuGyroConversionCoeff = 2000.0 / 32768.0;
 IMU_HandleType himu0;
 SemaphoreHandle_t imuHandleLockSemaphore;
 TaskHandle_t imuAccReceiveTaskHandle = NULL;
@@ -25,7 +21,6 @@ static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t 
 static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
 static void imuAccReceiveTask(void *param);
 static void imuGyroReceiveTask(void *param);
-
 
 IMU_StatusType imuInit()
 {
@@ -124,11 +119,11 @@ IMU_StatusType imuInit()
 
 	if(IMU_OK == retVal)
 	{
-		imuHandleLockSemaphore = xSemaphoreCreateBinary();
+		imuHandleLockSemaphore = xSemaphoreCreateMutex();
 		xSemaphoreGive(imuHandleLockSemaphore);
 
-		xTaskCreate(&imuAccReceiveTask, "IMU_ACC_RECEIVE", 256, NULL, IMU_ACC_RECEIVE_PRIO, &imuAccReceiveTaskHandle);
-		xTaskCreate(&imuGyroReceiveTask, "IMU_GYRO_RECEIVE", 256, NULL, IMU_GYRO_RECEIVE_PRIO, &imuGyroReceiveTaskHandle);
+		xTaskCreate(&imuAccReceiveTask, "IMU_ACC_RECEIVE", 256, NULL, IMU_ACC_GYRO_RECEIVE_PRIO, &imuAccReceiveTaskHandle);
+		xTaskCreate(&imuGyroReceiveTask, "IMU_GYRO_RECEIVE", 256, NULL, IMU_ACC_GYRO_RECEIVE_PRIO, &imuGyroReceiveTaskHandle);
 
 		HAL_NVIC_EnableIRQ(DRDY_ACC_EXTI_IRQn);
 		HAL_NVIC_EnableIRQ(DRDY_GYRO_EXTI_IRQn);
@@ -145,7 +140,6 @@ void imuDelayUs(uint32_t period, void* intfPtr)
 
 void imuGpioExtiCallback(uint16_t GPIO_Pin)
 {
-	htim2.Instance->CNT = 0;
 	if (GPIO_Pin == DRDY_ACC_Pin)
 	{
 		BaseType_t higherPriorityTaskWoken = pdFALSE;
@@ -169,6 +163,28 @@ void imuSpiTxRxCpltCallback(SPI_HandleTypeDef * hspi)
 		xSemaphoreGiveFromISR(himu0.txRxFinishedSemaphore, &higherPriorityTaskWoken);
 		portYIELD_FROM_ISR(higherPriorityTaskWoken);
 	}
+}
+
+IMU_StatusType imuReadData(IMU_DataType *dataOut)
+{
+	IMU_StatusType retVal = IMU_TIMEOUT;
+
+	if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
+	{
+		dataOut->accel.x = (float)himu0.accelData.x * imuAccConversionCoeff;
+		dataOut->accel.y = (float)himu0.accelData.y * imuAccConversionCoeff;
+		dataOut->accel.z = (float)himu0.accelData.z * imuAccConversionCoeff;
+
+		dataOut->gyro.x = (float)himu0.gyroData.x * imuGyroConversionCoeff;
+		dataOut->gyro.y = (float)himu0.gyroData.y * imuGyroConversionCoeff;
+		dataOut->gyro.z = (float)himu0.gyroData.z * imuGyroConversionCoeff;
+
+		xSemaphoreGive(imuHandleLockSemaphore);
+
+		retVal = IMU_OK;
+	}
+
+	return retVal;
 }
 
 static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr)
@@ -262,26 +278,17 @@ static void imuAccReceiveTask(void *param)
 	while(1)
 	{
 		uint32_t notified = ulTaskNotifyTake(pdTRUE, 500);
-
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
 			{
-				struct bmi08x_sensor_data accelBmi088;
-				char stlink_buff[16];
 
-				int8_t rslt = bmi08a_get_data(&accelBmi088, &imuDev);
+				vTaskPrioritySet(imuGyroReceiveTaskHandle, IMU_ACC_GYRO_RECEIVE_PRIO - 1);
+
+				bmi08a_get_data(&(himu0.accelData), &imuDev);
 
 				xSemaphoreGive(imuHandleLockSemaphore);
-
-				// TODO: make accel data available outside of this task
-//				double accOutX = accelBmi088.x * imuAccConversionCoeff;
-//				double accOutY = accelBmi088.y * imuAccConversionCoeff;
-//				double accOutZ = accelBmi088.z * imuAccConversionCoeff;
-
-				// "rslt: %i\tacc_x: %.1f\tacc_y: %.1f\tacc_z: %.1f\t%lu\r\n", rslt, accOutX, accOutY, accOutZ, htim2.Instance->CNT
-				sprintf(stlink_buff, "acc\t%i\t%lu\r\n", rslt, htim2.Instance->CNT);
-				HAL_UART_Transmit(&huart4, (uint8_t*)stlink_buff, strlen(stlink_buff), 100);
+				vTaskPrioritySet(imuGyroReceiveTaskHandle, IMU_ACC_GYRO_RECEIVE_PRIO);
 			}
 		}
 		else
@@ -296,27 +303,16 @@ static void imuGyroReceiveTask(void *param)
 	while(1)
 	{
 		uint32_t notified = ulTaskNotifyTake(pdTRUE, 500);
-
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
 			{
-				struct bmi08x_sensor_data gyroBmi088;
-				char stlink_buff[16];
+				vTaskPrioritySet(imuAccReceiveTaskHandle, IMU_ACC_GYRO_RECEIVE_PRIO - 1);
 
-				int8_t rslt = bmi08g_get_data(&gyroBmi088, &imuDev);
+				bmi08g_get_data(&(himu0.gyroData), &imuDev);
 
 				xSemaphoreGive(imuHandleLockSemaphore);
-
-
-				// TODO: make gyro data available outside of this task
-//				double rateOutX = gyroBmi088.x * imuGyroConversionCoeff;
-//				double rateOutY = gyroBmi088.y * imuGyroConversionCoeff;
-//				double rateOutZ = gyroBmi088.z * imuGyroConversionCoeff;
-
-				//"rslt: %i\trate_x: %.1f\trate_y: %.1f\trate_z: %.1f\t%lu\r\n", rslt, rateOutX, rateOutY, rateOutZ, htim2.Instance->CNT
-				sprintf(stlink_buff, "gyro\t%i\t%lu\r\n", rslt, htim2.Instance->CNT);
-				HAL_UART_Transmit(&huart4, (uint8_t*)stlink_buff, strlen(stlink_buff), 100);
+				vTaskPrioritySet(imuAccReceiveTaskHandle, IMU_ACC_GYRO_RECEIVE_PRIO);
 			}
 		}
 		else

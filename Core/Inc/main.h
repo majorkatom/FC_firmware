@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cmsis_os.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -72,8 +72,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 #define RADIO_RECEIVE_PRIO		1
 
-#define IMU_ACC_RECEIVE_PRIO	6
-#define IMU_GYRO_RECEIVE_PRIO	6
+#define IMU_ACC_GYRO_RECEIVE_PRIO	(configMAX_PRIORITIES - 1)
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
