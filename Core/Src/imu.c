@@ -17,11 +17,9 @@ uint8_t imuGyroDevAddr = 0u;
 const double imuAccConversionCoeff = 6000.0 / 32768.0;
 const double imuGyroConversionCoeff = 2000.0 / 32768.0;
 IMU_HandleType himu0;
+SemaphoreHandle_t imuHandleLockSemaphore;
 TaskHandle_t imuAccReceiveTaskHandle = NULL;
 TaskHandle_t imuGyroReceiveTaskHandle = NULL;
-SemaphoreHandle_t imuAccTxRxFinishedSemaphore;
-SemaphoreHandle_t imuGyroTxRxFinishedSemaphore;
-SemaphoreHandle_t imuHandleLockSemaphore;
 
 static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
@@ -72,8 +70,7 @@ IMU_StatusType imuInit()
 	HAL_NVIC_DisableIRQ(DRDY_ACC_EXTI_IRQn);
 	HAL_NVIC_DisableIRQ(DRDY_GYRO_EXTI_IRQn);
 
-	imuAccTxRxFinishedSemaphore = xSemaphoreCreateBinary();
-	imuGyroTxRxFinishedSemaphore = xSemaphoreCreateBinary();
+	himu0.txRxFinishedSemaphore = xSemaphoreCreateBinary();
 
 	if(BMI08X_OK != bmi08a_init(&imuDev))
 	{
@@ -146,146 +143,6 @@ void imuDelayUs(uint32_t period, void* intfPtr)
 	while (htim2.Instance->CNT < period);
 }
 
-static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr)
-{
-	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
-	himu0.txRxRetVal = HAL_ERROR;
-	himu0.regAddrSentFlag = 0u;
-	himu0.regData = regData;
-	himu0.len = (uint16_t)len;
-	himu0.transmitOrReceiveFlag = Rx;
-
-	if(intfPtr == imuDev.intf_ptr_accel)
-	{
-		himu0.CSPort = CS_ACC_GPIO_Port;
-		himu0.CSPin = CS_ACC_Pin;
-	}
-	else
-	{
-		himu0.CSPort = CS_GYRO_GPIO_Port;
-		himu0.CSPin = CS_GYRO_Pin;
-	}
-	HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, RESET);
-	HAL_SPI_Transmit_DMA(&hspi1, &regAddr, 1);
-
-	BaseType_t txRxFinishedRslt;
-	if(intfPtr == imuDev.intf_ptr_accel)
-	{
-		txRxFinishedRslt = xSemaphoreTake(imuAccTxRxFinishedSemaphore, 2);
-	}
-	else
-	{
-		txRxFinishedRslt = xSemaphoreTake(imuGyroTxRxFinishedSemaphore, 2);
-	}
-
-	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
-	{
-		retVal = BMI08X_OK;
-	}
-	else
-	{
-		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
-	}
-
-	return retVal;
-}
-
-BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr)
-{
-	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
-	himu0.txRxRetVal = HAL_ERROR;
-	himu0.regAddrSentFlag = 0u;
-	himu0.regData = regData;
-	himu0.len = (uint16_t)len;
-	himu0.transmitOrReceiveFlag = Tx;
-
-	if(intfPtr == imuDev.intf_ptr_accel)
-	{
-		himu0.CSPort = CS_ACC_GPIO_Port;
-		himu0.CSPin = CS_ACC_Pin;
-	}
-	else
-	{
-		himu0.CSPort = CS_GYRO_GPIO_Port;
-		himu0.CSPin = CS_GYRO_Pin;
-	}
-	HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, RESET);
-	HAL_SPI_Transmit_DMA(&hspi1, &regAddr, 1);
-
-	BaseType_t txRxFinishedRslt;
-	if(intfPtr == imuDev.intf_ptr_accel)
-	{
-		txRxFinishedRslt = xSemaphoreTake(imuAccTxRxFinishedSemaphore, 2);
-	}
-	else
-	{
-		txRxFinishedRslt = xSemaphoreTake(imuGyroTxRxFinishedSemaphore, 2);
-	}
-
-	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
-	{
-		retVal = BMI08X_OK;
-	}
-	else
-	{
-		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
-	}
-
-	return retVal;
-}
-
-void imuSpiTxCpltCallback(SPI_HandleTypeDef * hspi)
-{
-    if(hspi == &hspi1)
-    {
-    	if(0u == himu0.regAddrSentFlag)
-    	{
-    		himu0.regAddrSentFlag = 1u;
-    		if(Rx == himu0.transmitOrReceiveFlag)
-    		{
-    			himu0.txRxRetVal = HAL_SPI_Receive_DMA(&hspi1, himu0.regData, himu0.len);
-    		}
-    		else
-    		{
-    			himu0.txRxRetVal = HAL_SPI_Transmit_DMA(&hspi1, himu0.regData, himu0.len);
-    		}
-    	}
-    	else
-    	{
-    		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
-
-    		BaseType_t higherPriorityTaskWoken = pdFALSE;
-    		if(CS_ACC_GPIO_Port == himu0.CSPort)
-    		{
-				xSemaphoreGiveFromISR(imuAccTxRxFinishedSemaphore, &higherPriorityTaskWoken);
-    		}
-    		else
-    		{
-    			xSemaphoreGiveFromISR(imuGyroTxRxFinishedSemaphore, &higherPriorityTaskWoken);
-    		}
-    		portYIELD_FROM_ISR(higherPriorityTaskWoken);
-    	}
-    }
-}
-
-void imuSpiRxCpltCallback(SPI_HandleTypeDef * hspi)
-{
-    if(hspi == &hspi1)
-    {
-		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
-		BaseType_t higherPriorityTaskWoken = pdFALSE;
-		if(CS_ACC_GPIO_Port == himu0.CSPort)
-		{
-			xSemaphoreGiveFromISR(imuAccTxRxFinishedSemaphore, &higherPriorityTaskWoken);
-		}
-		else
-		{
-			xSemaphoreGiveFromISR(imuGyroTxRxFinishedSemaphore, &higherPriorityTaskWoken);
-		}
-		portYIELD_FROM_ISR(higherPriorityTaskWoken);
-    }
-}
-
 void imuGpioExtiCallback(uint16_t GPIO_Pin)
 {
 	htim2.Instance->CNT = 0;
@@ -301,6 +158,103 @@ void imuGpioExtiCallback(uint16_t GPIO_Pin)
 		vTaskNotifyGiveFromISR(imuGyroReceiveTaskHandle, &higherPriorityTaskWoken);
 		portYIELD_FROM_ISR(higherPriorityTaskWoken);
 	}
+}
+
+void imuSpiTxRxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+	if(hspi == &hspi1)
+	{
+		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
+		BaseType_t higherPriorityTaskWoken = pdFALSE;
+		xSemaphoreGiveFromISR(himu0.txRxFinishedSemaphore, &higherPriorityTaskWoken);
+		portYIELD_FROM_ISR(higherPriorityTaskWoken);
+	}
+}
+
+static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr)
+{
+	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
+	uint16_t buffLen = len + 1;
+	uint8_t txBuff[buffLen];
+	uint8_t rxBuff[buffLen];
+
+	himu0.txRxRetVal = HAL_ERROR;
+
+	if(intfPtr == imuDev.intf_ptr_accel)
+	{
+		himu0.CSPort = CS_ACC_GPIO_Port;
+		himu0.CSPin = CS_ACC_Pin;
+	}
+	else
+	{
+		himu0.CSPort = CS_GYRO_GPIO_Port;
+		himu0.CSPin = CS_GYRO_Pin;
+	}
+
+	txBuff[0] = regAddr;
+
+	HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, RESET);
+	himu0.txRxRetVal = HAL_SPI_TransmitReceive_DMA(&hspi1, txBuff, rxBuff, buffLen);
+
+	BaseType_t txRxFinishedRslt = xSemaphoreTake(himu0.txRxFinishedSemaphore, 2);
+
+	for(uint8_t i = 0u;i < len;i++)
+	{
+		regData[i] = rxBuff[i + 1];
+	}
+
+	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
+	{
+		retVal = BMI08X_OK;
+	}
+	else
+	{
+		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
+	}
+
+	return retVal;
+}
+static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr)
+{
+	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
+	uint16_t buffLen = len + 1;
+	uint8_t txBuff[buffLen];
+	uint8_t rxBuff[buffLen];
+
+	himu0.txRxRetVal = HAL_ERROR;
+
+	if(intfPtr == imuDev.intf_ptr_accel)
+	{
+		himu0.CSPort = CS_ACC_GPIO_Port;
+		himu0.CSPin = CS_ACC_Pin;
+	}
+	else
+	{
+		himu0.CSPort = CS_GYRO_GPIO_Port;
+		himu0.CSPin = CS_GYRO_Pin;
+	}
+
+	txBuff[0] = regAddr;
+	for(uint8_t i = 0u;i < len;i++)
+	{
+		txBuff[i + 1] = regData[i];
+	}
+
+	HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, RESET);
+	himu0.txRxRetVal = HAL_SPI_TransmitReceive_DMA(&hspi1, txBuff, rxBuff, buffLen);
+
+	BaseType_t txRxFinishedRslt = xSemaphoreTake(himu0.txRxFinishedSemaphore, 2);
+
+	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
+	{
+		retVal = BMI08X_OK;
+	}
+	else
+	{
+		HAL_GPIO_WritePin(himu0.CSPort, himu0.CSPin, SET);
+	}
+
+	return retVal;
 }
 
 static void imuAccReceiveTask(void *param)

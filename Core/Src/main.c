@@ -577,14 +577,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	radioUartRxCpltCallback(huart);
 }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	imuSpiTxCpltCallback(hspi);
-}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-	imuSpiRxCpltCallback(hspi);
+	imuSpiTxRxCpltCallback(hspi);
 }
 /* USER CODE END 4 */
 

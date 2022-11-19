@@ -8,17 +8,9 @@
 #ifndef INC_IMU_H_
 #define INC_IMU_H_
 
-typedef enum IMU_TxOrRxType_ {
-	Rx,
-	Tx
-} IMU_TxOrRxType;
-
 typedef struct IMU_HandleType_ {
-	IMU_TxOrRxType transmitOrReceiveFlag;
-	volatile uint8_t regAddrSentFlag;
+	SemaphoreHandle_t txRxFinishedSemaphore;
 	volatile HAL_StatusTypeDef txRxRetVal;
-	uint8_t *regData;
-	uint16_t len;
 	GPIO_TypeDef * CSPort;
 	uint16_t CSPin;
 } IMU_HandleType;
@@ -36,7 +28,6 @@ extern TIM_HandleTypeDef htim2;
 IMU_StatusType imuInit();
 void imuDelayUs(uint32_t period, void* intfPtr);
 void imuGpioExtiCallback(uint16_t GPIO_Pin);
-void imuSpiTxCpltCallback(SPI_HandleTypeDef * hspi);
-void imuSpiRxCpltCallback(SPI_HandleTypeDef * hspi);
+void imuSpiTxRxCpltCallback(SPI_HandleTypeDef * hspi);
 
 #endif /* INC_IMU_H_ */
