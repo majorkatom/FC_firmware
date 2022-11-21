@@ -69,10 +69,15 @@ void Error_Handler(void);
 #define DRDY_GYRO_Pin GPIO_PIN_0
 #define DRDY_GYRO_GPIO_Port GPIOB
 #define DRDY_GYRO_EXTI_IRQn EXTI0_IRQn
+#define CS_MAG_Pin GPIO_PIN_12
+#define CS_MAG_GPIO_Port GPIOB
+#define DRDY_MAG_Pin GPIO_PIN_14
+#define DRDY_MAG_GPIO_Port GPIOB
+#define DRDY_MAG_EXTI_IRQn EXTI15_10_IRQn
 /* USER CODE BEGIN Private defines */
-#define RADIO_RECEIVE_PRIO		1
-
+#define RADIO_RECEIVE_PRIO			1
 #define IMU_ACC_GYRO_RECEIVE_PRIO	(configMAX_PRIORITIES - 1)
+#define MAG_RECEIVE_PRIO 			(configMAX_PRIORITIES - 1)
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

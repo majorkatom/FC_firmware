@@ -15,5 +15,6 @@
 #include "radio.h"
 #include "esc.h"
 #include "imu.h"
+#include "magneto.h"
 
 #endif /* INC_BSP_H_ */

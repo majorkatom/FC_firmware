@@ -31,9 +31,6 @@ typedef enum IMU_StatusType_{
 	IMU_TIMEOUT
 } IMU_StatusType;
 
-extern SPI_HandleTypeDef hspi1;
-extern TIM_HandleTypeDef htim2;
-
 IMU_StatusType imuInit();
 void imuDelayUs(uint32_t period, void* intfPtr);
 void imuGpioExtiCallback(uint16_t GPIO_Pin);

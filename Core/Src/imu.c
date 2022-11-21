@@ -7,6 +7,8 @@
 
 #include "bsp.h"
 
+extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim2;
 struct bmi08x_dev imuDev;
 uint8_t imuAccDevAddr = 0u;
 uint8_t imuGyroDevAddr = 0u;
@@ -115,10 +117,7 @@ IMU_StatusType imuInit()
 	if(0u == errorCntr)
 	{
 		retVal = IMU_OK;
-	}
 
-	if(IMU_OK == retVal)
-	{
 		imuHandleLockSemaphore = xSemaphoreCreateMutex();
 		xSemaphoreGive(imuHandleLockSemaphore);
 
@@ -165,28 +164,6 @@ void imuSpiTxRxCpltCallback(SPI_HandleTypeDef * hspi)
 	}
 }
 
-IMU_StatusType imuReadData(IMU_DataType *dataOut)
-{
-	IMU_StatusType retVal = IMU_TIMEOUT;
-
-	if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
-	{
-		dataOut->accel.x = (float)himu0.accelData.x * imuAccConversionCoeff;
-		dataOut->accel.y = (float)himu0.accelData.y * imuAccConversionCoeff;
-		dataOut->accel.z = (float)himu0.accelData.z * imuAccConversionCoeff;
-
-		dataOut->gyro.x = (float)himu0.gyroData.x * imuGyroConversionCoeff;
-		dataOut->gyro.y = (float)himu0.gyroData.y * imuGyroConversionCoeff;
-		dataOut->gyro.z = (float)himu0.gyroData.z * imuGyroConversionCoeff;
-
-		xSemaphoreGive(imuHandleLockSemaphore);
-
-		retVal = IMU_OK;
-	}
-
-	return retVal;
-}
-
 static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr)
 {
 	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
@@ -230,6 +207,7 @@ static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t 
 
 	return retVal;
 }
+
 static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr)
 {
 	BMI08X_INTF_RET_TYPE retVal = BMI08X_E_COM_FAIL;
@@ -320,4 +298,26 @@ static void imuGyroReceiveTask(void *param)
 			// error TODO: stop motors or something
 		}
 	}
+}
+
+IMU_StatusType imuReadData(IMU_DataType *dataOut)
+{
+	IMU_StatusType retVal = IMU_TIMEOUT;
+
+	if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
+	{
+		dataOut->accel.x = (float)himu0.accelData.x * imuAccConversionCoeff;
+		dataOut->accel.y = (float)himu0.accelData.y * imuAccConversionCoeff;
+		dataOut->accel.z = (float)himu0.accelData.z * imuAccConversionCoeff;
+
+		dataOut->gyro.x = (float)himu0.gyroData.x * imuGyroConversionCoeff;
+		dataOut->gyro.y = (float)himu0.gyroData.y * imuGyroConversionCoeff;
+		dataOut->gyro.z = (float)himu0.gyroData.z * imuGyroConversionCoeff;
+
+		xSemaphoreGive(imuHandleLockSemaphore);
+
+		retVal = IMU_OK;
+	}
+
+	return retVal;
 }
