@@ -6,12 +6,8 @@
  */
 
 #include "bsp.h"
-// TODO: delete stdio.h and string.h
-#include <stdio.h>
-#include <string.h>
 
 extern SPI_HandleTypeDef hspi2;
-extern UART_HandleTypeDef huart4;  // TODO: delete huart4
 const float magConversionCoeff = 1.5;
 MAG_HandleType hmag0;
 SemaphoreHandle_t magHandleLockSemaphore;
@@ -22,9 +18,6 @@ static MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t
 static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, uint8_t len);
 static void magReceiveTask(void *param);
 static void magRecover(uint8_t *dataBuff);
-// TODO: delete read task
-static void magReadTask(void *param);
-
 
 MAG_StatusType magInit()
 {
@@ -63,7 +56,6 @@ MAG_StatusType magInit()
 		xSemaphoreGive(magHandleLockSemaphore);
 
 		xTaskCreate(&magReceiveTask, "MAG_RECEIVE", 256, NULL, MAG_RECEIVE_PRIO, &magReceiveTaskHandle);
-		xTaskCreate(&magReadTask, "MAG_RECEIVE", 128, NULL, 1, NULL);
 
 		HAL_NVIC_SetPriority(DRDY_MAG_EXTI_IRQn, 5, 0);
 		HAL_NVIC_EnableIRQ(DRDY_MAG_EXTI_IRQn);
@@ -223,18 +215,4 @@ MAG_StatusType magReadData(MAG_DataType *dataOut)
 	}
 
 	return retVal;
-}
-
-static void magReadTask(void *param)
-{
-	while(1)
-	{
-		MAG_DataType magData;
-		magReadData(&magData);
-
-		char stlink_buff[32];
-		sprintf(stlink_buff, "x: %.1f, y: %.1f, z: %.1f\r\n", magData.x, magData.y, magData.z);
-		HAL_UART_Transmit(&huart4, (uint8_t*)stlink_buff, strlen(stlink_buff), 10);
-		vTaskDelay(10);
-	}
 }

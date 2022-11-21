@@ -660,9 +660,9 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 void StartInitTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-//	escInit(); TODO: uncomment inits
-//	radioInit();
-//	imuInit();
+//	escInit(); TODO: uncomment esc init
+	radioInit();
+	imuInit();
 	magInit();
 	vTaskDelete(NULL);
   /* USER CODE END 5 */
