@@ -7,8 +7,8 @@
 
 #include "bsp.h"
 
-SemaphoreHandle_t radioSemaphore;
-RADIO_MessageType radioMessage;
+static SemaphoreHandle_t radioSemaphore;
+static RADIO_MessageType radioMessage;
 
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray);
 static void radioReceiveTask(void *param);

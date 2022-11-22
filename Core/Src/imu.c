@@ -9,15 +9,15 @@
 
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim2;
-struct bmi08x_dev imuDev;
-uint8_t imuAccDevAddr = 0u;
-uint8_t imuGyroDevAddr = 0u;
-const float imuAccConversionCoeff = 6000.0 / 32768.0;
-const float imuGyroConversionCoeff = 2000.0 / 32768.0;
-IMU_HandleType himu0;
-SemaphoreHandle_t imuHandleLockSemaphore;
-TaskHandle_t imuAccReceiveTaskHandle = NULL;
-TaskHandle_t imuGyroReceiveTaskHandle = NULL;
+static struct bmi08x_dev imuDev;
+static uint8_t imuAccDevAddr = 0u;
+static uint8_t imuGyroDevAddr = 0u;
+static const float imuAccConversionCoeff = 6000.0 / 32768.0;
+static const float imuGyroConversionCoeff = 2000.0 / 32768.0;
+static IMU_HandleType himu0;
+static SemaphoreHandle_t imuHandleLockSemaphore;
+static TaskHandle_t imuAccReceiveTaskHandle = NULL;
+static TaskHandle_t imuGyroReceiveTaskHandle = NULL;
 
 static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
@@ -198,6 +198,16 @@ static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t 
 
 	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
 	{
+		TaskHandle_t currentTaskHandle = xTaskGetCurrentTaskHandle();
+		if(imuAccReceiveTaskHandle == currentTaskHandle)
+		{
+			wifiPutMessage(WIFI_ACC_DATA, rxBuff + 1, 6);
+		}
+		else if (imuGyroReceiveTaskHandle == currentTaskHandle)
+		{
+			wifiPutMessage(WIFI_GYRO_DATA, rxBuff + 1, 6);
+		}
+
 		retVal = BMI08X_OK;
 	}
 	else
@@ -255,7 +265,7 @@ static void imuAccReceiveTask(void *param)
 {
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 500);
+		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
@@ -280,7 +290,7 @@ static void imuGyroReceiveTask(void *param)
 {
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 500);
+		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))

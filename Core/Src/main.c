@@ -54,7 +54,9 @@ DMA_HandleTypeDef hdma_tim1_ch3;
 DMA_HandleTypeDef hdma_tim1_ch4;
 
 UART_HandleTypeDef huart4;
+UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 osThreadId initTaskHandle;
 /* USER CODE BEGIN PV */
@@ -71,6 +73,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_USART2_UART_Init(void);
 void StartInitTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -117,6 +120,7 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM2_Init();
   MX_SPI2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -474,6 +478,54 @@ static void MX_UART4_Init(void)
 }
 
 /**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -550,6 +602,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+  /* DMA1_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
 
 }
 
@@ -648,6 +703,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	magSpiRxCpltCallback(hspi);
 }
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	wifiUartTxCpltCallback(huart);
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartInitTask */
@@ -660,6 +720,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 void StartInitTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+	wifiInit();
 //	escInit(); TODO: uncomment esc init
 	radioInit();
 	imuInit();

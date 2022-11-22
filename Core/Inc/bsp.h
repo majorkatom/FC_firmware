@@ -16,5 +16,6 @@
 #include "esc.h"
 #include "imu.h"
 #include "magneto.h"
+#include "wifi.h"
 
 #endif /* INC_BSP_H_ */

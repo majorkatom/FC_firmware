@@ -78,6 +78,7 @@ void Error_Handler(void);
 #define RADIO_RECEIVE_PRIO			1
 #define IMU_ACC_GYRO_RECEIVE_PRIO	(configMAX_PRIORITIES - 1)
 #define MAG_RECEIVE_PRIO 			(configMAX_PRIORITIES - 1)
+#define WIFI_SEND_PRIO 				tskIDLE_PRIORITY
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

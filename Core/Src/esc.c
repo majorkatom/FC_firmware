@@ -8,8 +8,8 @@
 #include "bsp.h"
 
 extern TIM_HandleTypeDef htim1;
-SemaphoreHandle_t escMotorValsChangedSemaphores[4];
-ESC_HandleType hesc0[4];
+static SemaphoreHandle_t escMotorValsChangedSemaphores[4];
+static ESC_HandleType hesc0[4];
 
 static uint16_t escMotorVal2Packet(uint16_t motorVal);
 static void escMotorBuffFill(uint16_t data, uint16_t *buffer);

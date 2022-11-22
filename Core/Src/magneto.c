@@ -8,11 +8,11 @@
 #include "bsp.h"
 
 extern SPI_HandleTypeDef hspi2;
-const float magConversionCoeff = 1.5;
-MAG_HandleType hmag0;
-SemaphoreHandle_t magHandleLockSemaphore;
-TaskHandle_t magReceiveTaskHandle = NULL;
-const uint8_t magCfgValsBuff[3] = {MAG_CFG_REG_A_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
+static const float magConversionCoeff = 1.5;
+static MAG_HandleType hmag0;
+static SemaphoreHandle_t magHandleLockSemaphore;
+static TaskHandle_t magReceiveTaskHandle = NULL;
+static const uint8_t magCfgValsBuff[3] = {MAG_CFG_REG_A_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 
 static MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t len);
 static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, uint8_t len);
@@ -156,13 +156,14 @@ static void magReceiveTask(void *param)
 {
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 500);
+		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
 			{
 				magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
 				magRecover(hmag0.rawDataBuff);
+				wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
 				xSemaphoreGive(magHandleLockSemaphore);
 			}
 		}
