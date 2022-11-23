@@ -12,19 +12,18 @@ static const float magConversionCoeff = 1.5;
 static MAG_HandleType hmag0;
 static SemaphoreHandle_t magHandleLockSemaphore;
 static TaskHandle_t magReceiveTaskHandle = NULL;
-static const uint8_t magCfgValsBuff[3] = {MAG_CFG_REG_A_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 
 static MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t len);
 static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, uint8_t len);
 static void magReceiveTask(void *param);
-static void magRecover(uint8_t *dataBuff);
 
 MAG_StatusType magInit()
 {
 	MAG_StatusType retVal = MAG_INIT_FAILED;
 	uint8_t errorCntr = 0u;
 
-	const uint8_t magResetVal = MAG_RESET_REG_VAL;
+	const uint8_t resetVal = MAG_RESET_REG_VAL;
+	const uint8_t cfgValsBuff[3] = {MAG_CFG_REG_A_INIT_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 	uint8_t readBuff[6];
 
 	HAL_NVIC_DisableIRQ(DRDY_MAG_EXTI_IRQn);
@@ -32,13 +31,13 @@ MAG_StatusType magInit()
 
 	hmag0.txRxFinishedSemaphore = xSemaphoreCreateBinary();
 
-	if(MAG_OK != magWrite(MAG_CFG_REG_A, &magResetVal, 1))
+	if(MAG_OK != magWrite(MAG_CFG_REG_A, &resetVal, 1))
 	{
 		errorCntr++;
 	}
 	vTaskDelay(1);
 
-	if(MAG_OK != magWrite(MAG_CFG_REG_A, magCfgValsBuff, 3))
+	if(MAG_OK != magWrite(MAG_CFG_REG_A, cfgValsBuff, 3))
 	{
 		errorCntr++;
 	}
@@ -154,40 +153,25 @@ static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, 
 
 static void magReceiveTask(void *param)
 {
+	const uint8_t startMeasurementRegVal = MAG_CFG_REG_A_MEASURE_VAL;
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
-		if(0u != notified)
+		if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 2))
 		{
-			if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
+			magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+			magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+			xSemaphoreGive(magHandleLockSemaphore);
+			uint32_t notified = ulTaskNotifyTake(pdTRUE, 10);
+			if(0u != notified)
 			{
-				magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
-				magRecover(hmag0.rawDataBuff);
-				wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
-				xSemaphoreGive(magHandleLockSemaphore);
+				if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
+				{
+					magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
+					wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
+					xSemaphoreGive(magHandleLockSemaphore);
+				}
 			}
 		}
-		else
-		{
-			// error TODO: stop motors or something
-		}
-	}
-}
-
-static void magRecover(uint8_t *dataBuff)
-{
-	uint8_t zeroCnt = 0u;
-	for(uint8_t i = 0u; i < 6; i++)
-	{
-		if(0u == dataBuff[i])
-		{
-			zeroCnt++;
-		}
-	}
-	if(6u == zeroCnt)
-	{
-		magWrite(MAG_CFG_REG_A, magCfgValsBuff, 3);
-		magRead(MAG_OUTX_L_REG, dataBuff, 6);
 	}
 }
 
