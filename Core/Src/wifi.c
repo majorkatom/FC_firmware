@@ -18,6 +18,7 @@ static void wifiSendTask(void *param);
 
 WIFI_StatusType wifiInit()
 {
+	vTaskDelay(20);
 	WIFI_StatusType retVal = WIFI_DISABLED;
 	if(0u != WIFI_ENABLE)
 	{
