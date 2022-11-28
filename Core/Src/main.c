@@ -77,7 +77,7 @@ static void MX_USART2_UART_Init(void);
 void StartInitTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-
+void mainDisableInterrupts();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -708,6 +708,13 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	wifiUartTxCpltCallback(huart);
 }
+
+void mainDisableInterrupts()
+{
+	HAL_NVIC_DisableIRQ(DRDY_MAG_EXTI_IRQn);
+	HAL_NVIC_DisableIRQ(DRDY_ACC_EXTI_IRQn);
+	HAL_NVIC_DisableIRQ(DRDY_GYRO_EXTI_IRQn);
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartInitTask */
@@ -720,6 +727,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 void StartInitTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+	mainDisableInterrupts();
 	wifiInit();
 //	escInit(); TODO: uncomment esc init
 	radioInit();

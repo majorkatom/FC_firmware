@@ -64,9 +64,6 @@ IMU_StatusType imuInit()
 
 	HAL_TIM_Base_Start(&htim2);
 
-	HAL_NVIC_DisableIRQ(DRDY_ACC_EXTI_IRQn);
-	HAL_NVIC_DisableIRQ(DRDY_GYRO_EXTI_IRQn);
-
 	himu0.txRxFinishedSemaphore = xSemaphoreCreateBinary();
 
 	if(BMI08X_OK != bmi08a_init(&imuDev))
@@ -201,7 +198,7 @@ static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t 
 		TaskHandle_t currentTaskHandle = xTaskGetCurrentTaskHandle();
 		if(imuAccReceiveTaskHandle == currentTaskHandle)
 		{
-			wifiPutMessage(WIFI_ACC_DATA, rxBuff + 1, 6);
+			wifiPutMessage(WIFI_ACC_DATA, rxBuff + 2, 6);
 		}
 		else if (imuGyroReceiveTaskHandle == currentTaskHandle)
 		{

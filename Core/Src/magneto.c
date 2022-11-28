@@ -26,7 +26,6 @@ MAG_StatusType magInit()
 	const uint8_t cfgValsBuff[3] = {MAG_CFG_REG_A_INIT_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 	uint8_t readBuff[6];
 
-	HAL_NVIC_DisableIRQ(DRDY_MAG_EXTI_IRQn);
 	vTaskDelay(21);
 
 	hmag0.txRxFinishedSemaphore = xSemaphoreCreateBinary();
