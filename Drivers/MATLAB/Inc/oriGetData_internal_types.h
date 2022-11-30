@@ -12,7 +12,6 @@
 #define ORIGETDATA_INTERNAL_TYPES_H
 
 /* Include Files */
-#include "oriGetData_types.h"
 #include "rtwtypes.h"
 
 /* Type Definitions */

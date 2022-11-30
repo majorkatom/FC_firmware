@@ -13,7 +13,6 @@
 #include "AHRSFilterBase.h"
 #include "oriGetData_data.h"
 #include "oriGetData_internal_types.h"
-#include "oriGetData_types.h"
 #include "bsp.h"
 #include <math.h>
 #include <string.h>
@@ -26,7 +25,7 @@
  * Return Type  : void
  */
 void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
-                struct0_T *dataOut)
+		STATE_OrientationDatatType *dataOut)
 {
   static const float fv[144] = {
       6.09234849E-6F, 0.0F,           0.0F,           0.0F,
@@ -78,8 +77,6 @@ void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
   float varargout_1_a;
   float varargout_1_d;
   float x;
-  int32_t b_exponent;
-  int32_t exponent;
   int32_t i;
   int32_t i2;
   int8_t i1;
@@ -153,8 +150,6 @@ void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
   if (tmp < -1.0F) {
     tmp = -1.0F;
   }
-  frexp(1.0, &exponent);
-  frexp(1.0, &b_exponent);
   b = (float)asin(tmp);
   if (b >= 1.57079518F) {
     tmp = 0.0F;

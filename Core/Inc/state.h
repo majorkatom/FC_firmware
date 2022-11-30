@@ -8,7 +8,11 @@
 #ifndef INC_STATE_H_
 #define INC_STATE_H_
 
-typedef struct0_T STATE_OrientationDatatType;
+typedef struct STATE_OrientationDatatType_{
+	float pitch;	// rad
+	float roll;		// rad
+	float yawRate;	// rad/s
+} STATE_OrientationDatatType;
 
 typedef enum STATE_StateType_ {
 	STATE_INIT,

@@ -12,7 +12,6 @@
 #define ORIGETDATA_H
 
 /* Include Files */
-#include "oriGetData_types.h"
 #include "rtwtypes.h"
 #include "bsp.h"
 #include <stddef.h>
@@ -24,7 +23,7 @@ extern "C" {
 
 /* Function Declarations */
 extern void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
-                       struct0_T *dataOut);
+		STATE_OrientationDatatType *dataOut);
 
 #ifdef __cplusplus
 }
