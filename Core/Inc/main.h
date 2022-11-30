@@ -75,10 +75,11 @@ void Error_Handler(void);
 #define DRDY_MAG_GPIO_Port GPIOB
 #define DRDY_MAG_EXTI_IRQn EXTI15_10_IRQn
 /* USER CODE BEGIN Private defines */
-#define RADIO_RECEIVE_PRIO			1
+#define RADIO_RECEIVE_PRIO			2
 #define IMU_ACC_GYRO_RECEIVE_PRIO	(configMAX_PRIORITIES - 1)
 #define MAG_RECEIVE_PRIO 			(configMAX_PRIORITIES - 1)
 #define WIFI_SEND_PRIO 				tskIDLE_PRIORITY
+#define STATE_PRIO					1
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

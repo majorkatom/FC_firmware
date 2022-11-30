@@ -262,7 +262,7 @@ static void imuAccReceiveTask(void *param)
 {
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
+		uint32_t notified = ulTaskNotifyTake(pdTRUE, 200);
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
@@ -278,7 +278,7 @@ static void imuAccReceiveTask(void *param)
 		}
 		else
 		{
-			// error TODO: stop motors or something
+			stateSetState(STATE_DISARMED);
 		}
 	}
 }
@@ -287,7 +287,7 @@ static void imuGyroReceiveTask(void *param)
 {
 	while(1)
 	{
-		uint32_t notified = ulTaskNotifyTake(pdTRUE, 20);
+		uint32_t notified = ulTaskNotifyTake(pdTRUE, 200);
 		if(0u != notified)
 		{
 			if(pdTRUE == xSemaphoreTake(imuHandleLockSemaphore, 5))
@@ -302,7 +302,7 @@ static void imuGyroReceiveTask(void *param)
 		}
 		else
 		{
-			// error TODO: stop motors or something
+			stateSetState(STATE_DISARMED);
 		}
 	}
 }

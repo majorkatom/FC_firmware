@@ -11,11 +11,13 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "bmi08x.h"
+#include "oriGetData_types.h"
 
 #include "radio.h"
 #include "esc.h"
 #include "imu.h"
 #include "magneto.h"
 #include "wifi.h"
+#include "state.h"
 
 #endif /* INC_BSP_H_ */

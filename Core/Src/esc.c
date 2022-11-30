@@ -80,14 +80,29 @@ static void escDmaHalfBuffFill(uint16_t *motorBuff, uint16_t *dmaBuffer, uint16_
 
 void escSetMotorVals(uint16_t motorVal1, uint16_t motorVal2, uint16_t motorVal3, uint16_t motorVal4)
 {
-	uint16_t motorVals[4] = {motorVal1, motorVal2, motorVal3, motorVal4};
-	for(uint8_t i = 0u;i < 4u;i++)
+	if(STATE_ARMED == stateGetState())
 	{
-		hesc0[i].motorVal = motorVals[i];
-		escMotorBuffFill(escMotorVal2Packet(hesc0[i].motorVal), hesc0[i].motorBuff);
-		if(pdTRUE == xSemaphoreTake(escMotorValsChangedSemaphores[i], 5))
+		uint16_t motorVals[4] = {motorVal1, motorVal2, motorVal3, motorVal4};
+		for(uint8_t i = 0u;i < 4u;i++)
 		{
-			xSemaphoreTake(escMotorValsChangedSemaphores[i], 5);
+			hesc0[i].motorVal = motorVals[i];
+			escMotorBuffFill(escMotorVal2Packet(hesc0[i].motorVal), hesc0[i].motorBuff);
+			if(pdTRUE == xSemaphoreTake(escMotorValsChangedSemaphores[i], 5))
+			{
+				xSemaphoreTake(escMotorValsChangedSemaphores[i], 5);
+			}
+		}
+	}
+	else
+	{
+		for(uint8_t i = 0u;i < 4u;i++)
+		{
+			hesc0[i].motorVal = 0u;
+			escMotorBuffFill(escMotorVal2Packet(hesc0[i].motorVal), hesc0[i].motorBuff);
+			if(pdTRUE == xSemaphoreTake(escMotorValsChangedSemaphores[i], 5))
+			{
+				xSemaphoreTake(escMotorValsChangedSemaphores[i], 5);
+			}
 		}
 	}
 }

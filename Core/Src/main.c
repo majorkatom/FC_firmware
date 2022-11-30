@@ -731,8 +731,9 @@ void StartInitTask(void const * argument)
 	wifiInit();
 //	escInit(); TODO: uncomment esc init
 	radioInit();
-	imuInit();
-	magInit();
+	IMU_StatusType imuInitRetVal = imuInit();
+	MAG_StatusType magInitRetVal = magInit();
+	stateInit(imuInitRetVal, magInitRetVal);
 	vTaskDelete(NULL);
   /* USER CODE END 5 */
 }

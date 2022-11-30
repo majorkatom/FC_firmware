@@ -153,23 +153,44 @@ static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, 
 static void magReceiveTask(void *param)
 {
 	const uint8_t startMeasurementRegVal = MAG_CFG_REG_A_MEASURE_VAL;
+	uint16_t noDataDebounceCntr = 0u;
 	while(1)
 	{
-		if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 2))
+		if(300u > noDataDebounceCntr)
 		{
-			magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
-			magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
-			xSemaphoreGive(magHandleLockSemaphore);
-			uint32_t notified = ulTaskNotifyTake(pdTRUE, 10);
-			if(0u != notified)
+			if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 2))
 			{
-				if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
+				magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+				magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+				xSemaphoreGive(magHandleLockSemaphore);
+				uint32_t notified = ulTaskNotifyTake(pdTRUE, 10);
+				if(0u != notified)
 				{
-					magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
-					wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
-					xSemaphoreGive(magHandleLockSemaphore);
+					if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
+					{
+						magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
+						wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
+						xSemaphoreGive(magHandleLockSemaphore);
+						noDataDebounceCntr = 0u;
+					}
+					else
+					{
+						noDataDebounceCntr++;
+					}
+				}
+				else
+				{
+					noDataDebounceCntr++;
 				}
 			}
+			else
+			{
+				noDataDebounceCntr++;
+			}
+		}
+		else
+		{
+			stateSetState(STATE_DISARMED);
 		}
 	}
 }

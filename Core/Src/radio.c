@@ -7,8 +7,10 @@
 
 #include "bsp.h"
 
-static SemaphoreHandle_t radioSemaphore;
+static uint16_t *radioChannelsPtr = NULL;
+static SemaphoreHandle_t radioChannelsSemaphore;
 static RADIO_MessageType radioMessage;
+static TaskHandle_t radioReceiveTaskHandle = NULL;
 
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray);
 static void radioReceiveTask(void *param);
@@ -16,8 +18,9 @@ static void radioReceiveTask(void *param);
 void radioInit()
 {
 	radioMessage.dataReceived = 0u;
-	radioSemaphore = xSemaphoreCreateBinary();
-	xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, NULL);
+	radioChannelsSemaphore = xSemaphoreCreateMutex();
+	xSemaphoreGive(radioChannelsSemaphore);
+	xTaskCreate(&radioReceiveTask, "RADIO_RECEIVE", 512, NULL, RADIO_RECEIVE_PRIO, &radioReceiveTaskHandle);
 }
 
 static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
@@ -36,8 +39,8 @@ static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
 		}
 		else
 		{
-			BaseType_t semaphoreTakeRet = xSemaphoreTake(radioSemaphore, 5);
-			if(pdTRUE == semaphoreTakeRet)
+			uint32_t notified = ulTaskNotifyTake(pdTRUE, 5);
+			if(0u != notified)
 			{
 				radioMessage.msgType = radioMessage.rxBuffer[0];
 				if(0x40 == radioMessage.msgType)
@@ -68,7 +71,7 @@ static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
 			}
 			else
 			{
-				retVal = RADIO_SEMAPHORE_TIMEOUT_ERROR;
+				retVal = RADIO_TIMEOUT;
 			}
 		}
 	}
@@ -92,7 +95,7 @@ void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 		{
 			radioMessage.dataReceived = 0u;
 			BaseType_t higherPriorityTaskWoken = pdFALSE;
-			xSemaphoreGiveFromISR(radioSemaphore, &higherPriorityTaskWoken);
+			vTaskNotifyGiveFromISR(radioReceiveTaskHandle, &higherPriorityTaskWoken);
 			portYIELD_FROM_ISR(higherPriorityTaskWoken);
 		}
 	}
@@ -100,14 +103,56 @@ void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 
 static void radioReceiveTask(void *param)
 {
+	uint16_t radioChannelsReceiveArray[RADIO_CH_NUM];
 	while(1)
 	{
-		uint16_t radioChannels[RADIO_CH_NUM];
-		RADIO_StatusType radioRetVal = radioStartReceive(radioChannels);
-		if(RADIO_OK == radioRetVal)
+		if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 5))
 		{
-
+			if(RADIO_OK == radioStartReceive(radioChannelsReceiveArray))
+			{
+				if(RADIO_MIN_CH_VAL == radioChannelsReceiveArray[RADIO_CH_IDX_ARM_SWC])
+				{
+					stateSetState(STATE_DISARMED);
+					radioChannelsPtr = NULL;
+				}
+				else
+				{
+					radioChannelsPtr = radioChannelsReceiveArray;
+				}
+			}
+			else
+			{
+				radioChannelsPtr = NULL;
+			}
+			xSemaphoreGive(radioChannelsSemaphore);
 		}
+
 		vTaskDelay(7);
+	}
+}
+
+void radioReadData(uint16_t *radioChannels)
+{
+	static uint16_t radioChannelsReadArray[RADIO_CH_NUM];
+	if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 5))
+	{
+		if(NULL != radioChannelsPtr)
+		{
+			for(uint8_t i = 0u;i < RADIO_CH_NUM;i++)
+			{
+				radioChannelsReadArray[i] = radioChannelsPtr[i];
+			}
+			radioChannels = radioChannelsReadArray;
+		}
+		else
+		{
+			radioChannels = NULL;
+		}
+
+		xSemaphoreGive(radioChannelsSemaphore);
+	}
+	else
+	{
+		radioChannels = NULL;
 	}
 }
