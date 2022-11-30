@@ -14,7 +14,7 @@
 #define MAG_RESET_REG_VAL (uint8_t)0b00100011
 #define MAG_CFG_REG_A_INIT_VAL (uint8_t)0b10000011
 #define MAG_CFG_REG_A_MEASURE_VAL (uint8_t)0b10000001
-#define MAG_CFG_REG_B_VAL (uint8_t)0b00000011
+#define MAG_CFG_REG_B_VAL (uint8_t)0b00000001
 #define MAG_CFG_REG_C_VAL (uint8_t)0b00110001
 
 typedef struct MAG_DataType_ {
