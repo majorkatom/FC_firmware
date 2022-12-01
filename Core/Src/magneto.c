@@ -8,7 +8,7 @@
 #include "bsp.h"
 
 extern SPI_HandleTypeDef hspi2;
-static const float magConversionCoeff = 1.5;
+static const float magConversionCoeff = 0.15;  // to uT
 static MAG_HandleType hmag0;
 static SemaphoreHandle_t magHandleLockSemaphore;
 static TaskHandle_t magReceiveTaskHandle = NULL;
@@ -213,7 +213,7 @@ MAG_StatusType magReadData(MAG_DataType *dataOut)
 		xSemaphoreGive(magHandleLockSemaphore);
 
 		dataOut->x = (float)xRaw * magConversionCoeff;
-		dataOut->y = (float)yRaw * magConversionCoeff;
+		dataOut->y = (float)(-yRaw) * magConversionCoeff;  // transform to body coordinate system
 		dataOut->z = (float)zRaw * magConversionCoeff;
 
 		retVal = MAG_OK;

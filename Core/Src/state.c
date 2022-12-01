@@ -34,5 +34,5 @@ void stateSetState(STATE_StateType stateToSet)
 
 static void stateTask(void *param)
 {
-
+	// TODO: calibration of sensor data, write state machine
 }

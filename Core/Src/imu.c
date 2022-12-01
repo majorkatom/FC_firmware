@@ -6,14 +6,15 @@
  */
 
 #include "bsp.h"
+#include <math.h>
 
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim2;
 static struct bmi08x_dev imuDev;
 static uint8_t imuAccDevAddr = 0u;
 static uint8_t imuGyroDevAddr = 0u;
-static const float imuAccConversionCoeff = 6000.0 / 32768.0;
-static const float imuGyroConversionCoeff = 2000.0 / 32768.0;
+static const float imuAccConversionCoeff = -6000.0 / 32768.0 / 1000.0 * 9.81;  // to m/s^2, correct direction
+static const float imuGyroConversionCoeff = 2000.0 / 32768.0 / 180.0 * M_PI;  // to rad/s
 static IMU_HandleType himu0;
 static SemaphoreHandle_t imuHandleLockSemaphore;
 static TaskHandle_t imuAccReceiveTaskHandle = NULL;
