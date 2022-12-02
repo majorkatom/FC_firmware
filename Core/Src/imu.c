@@ -285,7 +285,8 @@ static void imuAccReceiveTask(void *param)
 		}
 		else
 		{
-			stateSetState(STATE_DISARMED);
+			escSetMotorVals(0, 0, 0, 0);
+			stateSetState(STATE_DISARMED, STATE_ACC_ERROR);
 		}
 	}
 }
@@ -309,7 +310,8 @@ static void imuGyroReceiveTask(void *param)
 		}
 		else
 		{
-			stateSetState(STATE_DISARMED);
+			escSetMotorVals(0, 0, 0, 0);
+			stateSetState(STATE_DISARMED, STATE_GYRO_ERROR);
 		}
 	}
 }

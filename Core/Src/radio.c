@@ -40,7 +40,7 @@ static RADIO_StatusType radioStartReceive(uint16_t *channelArray)
 		}
 		else
 		{
-			uint32_t notified = ulTaskNotifyTake(pdTRUE, 5);
+			uint32_t notified = ulTaskNotifyTake(pdTRUE, 3);
 			if(0u != notified)
 			{
 				radioMessage.msgType = radioMessage.rxBuffer[0];
@@ -104,58 +104,66 @@ void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 
 static void radioReceiveTask(void *param)
 {
-	uint16_t radioChannelsReceiveArray[RADIO_CH_NUM];
+	static uint16_t radioChannelsReceiveArray[RADIO_CH_NUM];
+	uint16_t noDataDebounceCntr = 0u;
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 
 	while(1)
 	{
-		vTaskDelayUntil(&xLastWakeTime, 7);
+		vTaskDelayUntil(&xLastWakeTime, 6);
 
-		if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 5))
+		if (50u > noDataDebounceCntr || STATE_DISARMED == stateGetMainState())
 		{
-			if(RADIO_OK == radioStartReceive(radioChannelsReceiveArray))
+			if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 3))
 			{
-				if(RADIO_MIN_CH_VAL == radioChannelsReceiveArray[RADIO_CH_IDX_ARM_SWC])
+				RADIO_StatusType retValReceive = radioStartReceive(radioChannelsReceiveArray);
+				if(RADIO_OK == retValReceive)
 				{
-					stateSetState(STATE_DISARMED);
-					radioChannelsPtr = NULL;
+					noDataDebounceCntr = 0u;
+					if((RADIO_MIN_CH_VAL == radioChannelsReceiveArray[RADIO_CH_IDX_ARM_SWC]) && (STATE_ARMED == stateGetMainState()))
+					{
+						stateSetState(STATE_DISARMED, STATE_NORMAL_OPERATION);
+					}
+					radioChannelsPtr = radioChannelsReceiveArray;
 				}
 				else
 				{
-					radioChannelsPtr = radioChannelsReceiveArray;
+					noDataDebounceCntr++;
+					radioChannelsPtr = NULL;
 				}
+				xSemaphoreGive(radioChannelsSemaphore);
 			}
-			else
-			{
-				radioChannelsPtr = NULL;
-			}
-			xSemaphoreGive(radioChannelsSemaphore);
+		}
+		else if(STATE_ARMED == stateGetMainState())
+		{
+			escSetMotorVals(0, 0, 0, 0);
+			stateSetState(STATE_DISARMED, STATE_RADIO_ERROR);
 		}
 	}
 }
 
-void radioReadData(uint16_t *radioChannels)
+RADIO_StatusType radioReadData(RADIO_ChannelsType *radioChannels)
 {
-	static uint16_t radioChannelsReadArray[RADIO_CH_NUM];
+	RADIO_StatusType retVal = RADIO_TIMEOUT;
 	if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 5))
 	{
 		if(NULL != radioChannelsPtr)
 		{
-			for(uint8_t i = 0u;i < RADIO_CH_NUM;i++)
-			{
-				radioChannelsReadArray[i] = radioChannelsPtr[i];
-			}
-			radioChannels = radioChannelsReadArray;
+			radioChannels->roll = radioChannelsPtr[RADIO_CH_IDX_ROLL];
+			radioChannels->pitch = radioChannelsPtr[RADIO_CH_IDX_PITCH];
+			radioChannels->throttle = radioChannelsPtr[RADIO_CH_IDX_THROTTLE];
+			radioChannels->yaw = radioChannelsPtr[RADIO_CH_IDX_YAW];
+			radioChannels->arm = radioChannelsPtr[RADIO_CH_IDX_ARM_SWC];
+
+			retVal = RADIO_OK;
 		}
 		else
 		{
-			radioChannels = NULL;
+			retVal = RADIO_NULL_PTR;
 		}
 
 		xSemaphoreGive(radioChannelsSemaphore);
 	}
-	else
-	{
-		radioChannels = NULL;
-	}
+
+	return retVal;
 }

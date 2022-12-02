@@ -80,7 +80,7 @@ static void escDmaHalfBuffFill(uint16_t *motorBuff, uint16_t *dmaBuffer, uint16_
 
 void escSetMotorVals(uint16_t motorVal1, uint16_t motorVal2, uint16_t motorVal3, uint16_t motorVal4)
 {
-	if(STATE_ARMED == stateGetState())
+	if(STATE_ARMED == stateGetMainState())
 	{
 		uint16_t motorVals[4] = {motorVal1, motorVal2, motorVal3, motorVal4};
 		for(uint8_t i = 0u;i < 4u;i++)

@@ -729,7 +729,7 @@ void StartInitTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	mainDisableInterrupts();
 	wifiInit();
-//	escInit(); TODO: uncomment esc init
+	escInit();
 	radioInit();
 	IMU_StatusType imuInitRetVal = imuInit();
 	MAG_StatusType magInitRetVal = magInit();

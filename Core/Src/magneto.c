@@ -206,7 +206,8 @@ static void magReceiveTask(void *param)
 		}
 		else
 		{
-			stateSetState(STATE_DISARMED);
+			escSetMotorVals(0, 0, 0, 0);
+			stateSetState(STATE_DISARMED, STATE_MAG_ERROR);
 		}
 	}
 }
