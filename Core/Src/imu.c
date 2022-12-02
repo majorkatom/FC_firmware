@@ -19,11 +19,17 @@ static IMU_HandleType himu0;
 static SemaphoreHandle_t imuHandleLockSemaphore;
 static TaskHandle_t imuAccReceiveTaskHandle = NULL;
 static TaskHandle_t imuGyroReceiveTaskHandle = NULL;
+static const IMU_FloatSensorDataType imuAccOffsets = {.x = 0.016164253625531 * 9.81, .y = 0.005060562855321 * 9.81, .z = 0.032104011381876 * 9.81};
+static const float imuAccScaleMatrix[3][3] = {{0.992657245710367, 0.0816467615960184, -0.00164109994966634},
+											  {0.0816467615960184, 0.999027495111350, 0.00264269486623023},
+											  {-0.00164109994966634, 0.00264269486623023, 1.00145411026928}};
+static const IMU_FloatSensorDataType imuGyroOffsets = {.x = -0.0007352341460390874, .y = 0.0009680888506449828, .z = -0.001571310880687027};
 
 static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t len, void *intfPtr);
 static BMI08X_INTF_RET_TYPE imuWrite(uint8_t regAddr, const uint8_t *regData, uint32_t len, void *intfPtr);
 static void imuAccReceiveTask(void *param);
 static void imuGyroReceiveTask(void *param);
+static void imuCalibrate(IMU_DataType *imuData);
 
 IMU_StatusType imuInit()
 {
@@ -196,15 +202,15 @@ static BMI08X_INTF_RET_TYPE imuRead(uint8_t regAddr, uint8_t *regData, uint32_t 
 
 	if((HAL_OK == himu0.txRxRetVal)&&(pdTRUE == txRxFinishedRslt))
 	{
-		TaskHandle_t currentTaskHandle = xTaskGetCurrentTaskHandle();
-		if(imuAccReceiveTaskHandle == currentTaskHandle)
-		{
-			wifiPutMessage(WIFI_ACC_DATA, rxBuff + 2, 6);
-		}
-		else if (imuGyroReceiveTaskHandle == currentTaskHandle)
-		{
-			wifiPutMessage(WIFI_GYRO_DATA, rxBuff + 1, 6);
-		}
+//		TaskHandle_t currentTaskHandle = xTaskGetCurrentTaskHandle();
+//		if(imuAccReceiveTaskHandle == currentTaskHandle)
+//		{
+//			wifiPutMessage(WIFI_ACC_DATA, rxBuff + 2, 6);
+//		}
+//		else if (imuGyroReceiveTaskHandle == currentTaskHandle)
+//		{
+//			wifiPutMessage(WIFI_GYRO_DATA, rxBuff + 1, 6);
+//		}
 
 		retVal = BMI08X_OK;
 	}
@@ -324,8 +330,27 @@ IMU_StatusType imuReadData(IMU_DataType *dataOut)
 
 		xSemaphoreGive(imuHandleLockSemaphore);
 
+		imuCalibrate(dataOut);
+
 		retVal = IMU_OK;
 	}
 
 	return retVal;
+}
+
+static void imuCalibrate(IMU_DataType *imuData)
+{
+	// acc
+	float accXTemp = imuData->accel.x - imuAccOffsets.x;
+	float accYTemp = imuData->accel.y - imuAccOffsets.y;
+	float accZTemp = imuData->accel.z - imuAccOffsets.z;
+
+	imuData->accel.x = accXTemp * imuAccScaleMatrix[0][0] +  accYTemp * imuAccScaleMatrix[0][1] +  accZTemp * imuAccScaleMatrix[0][2];
+	imuData->accel.y = accXTemp * imuAccScaleMatrix[1][0] +  accYTemp * imuAccScaleMatrix[1][1] +  accZTemp * imuAccScaleMatrix[1][2];
+	imuData->accel.z = accXTemp * imuAccScaleMatrix[2][0] +  accYTemp * imuAccScaleMatrix[2][1] +  accZTemp * imuAccScaleMatrix[2][2];
+
+	// gyro
+	imuData->gyro.x = imuData->gyro.x - imuGyroOffsets.x;
+	imuData->gyro.y = imuData->gyro.y - imuGyroOffsets.y;
+	imuData->gyro.z = imuData->gyro.z - imuGyroOffsets.z;
 }

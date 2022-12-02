@@ -7,6 +7,7 @@
 
 #include "bsp.h"
 
+extern UART_HandleTypeDef huart3;
 static uint16_t *radioChannelsPtr = NULL;
 static SemaphoreHandle_t radioChannelsSemaphore;
 static RADIO_MessageType radioMessage;
@@ -104,8 +105,12 @@ void radioUartRxCpltCallback(UART_HandleTypeDef *huart)
 static void radioReceiveTask(void *param)
 {
 	uint16_t radioChannelsReceiveArray[RADIO_CH_NUM];
+	TickType_t xLastWakeTime = xTaskGetTickCount();
+
 	while(1)
 	{
+		vTaskDelayUntil(&xLastWakeTime, 7);
+
 		if(pdTRUE == xSemaphoreTake(radioChannelsSemaphore, 5))
 		{
 			if(RADIO_OK == radioStartReceive(radioChannelsReceiveArray))
@@ -126,8 +131,6 @@ static void radioReceiveTask(void *param)
 			}
 			xSemaphoreGive(radioChannelsSemaphore);
 		}
-
-		vTaskDelay(7);
 	}
 }
 

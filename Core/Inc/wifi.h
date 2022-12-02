@@ -23,7 +23,8 @@ typedef struct WIFI_CircularBuffType_ {
 typedef enum WIFI_MessageType_ {
 	WIFI_ACC_DATA,
 	WIFI_GYRO_DATA,
-	WIFI_MAG_DATA
+	WIFI_MAG_DATA,
+	WIFI_ORIENTATION
 } WIFI_MessageType;
 
 typedef enum WIFI_StatusType_ {

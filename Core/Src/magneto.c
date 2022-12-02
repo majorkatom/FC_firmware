@@ -10,12 +10,18 @@
 extern SPI_HandleTypeDef hspi2;
 static const float magConversionCoeff = 0.15;  // to uT
 static MAG_HandleType hmag0;
+const uint8_t magCfgValsBuff[3] = {MAG_CFG_REG_A_INIT_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 static SemaphoreHandle_t magHandleLockSemaphore;
 static TaskHandle_t magReceiveTaskHandle = NULL;
+static const MAG_DataType magOffsets = {.x = 21.350651490437650, .y = -27.119178505878086, .z = -2.231146595581015};
+static const float magScaleMatrix[3][3] = {{1.10544608631976, -0.00982809963348214, 0.0236543410460084},
+											  {-0.00982809963348214, 1.12841523990916, 0.0158122395570343},
+											  {0.0236543410460084, 0.0158122395570343, 0.802461808581853}};
 
 static MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t len);
 static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, uint8_t len);
 static void magReceiveTask(void *param);
+static void magCalibrate(MAG_DataType *magData);
 
 MAG_StatusType magInit()
 {
@@ -23,7 +29,6 @@ MAG_StatusType magInit()
 	uint8_t errorCntr = 0u;
 
 	const uint8_t resetVal = MAG_RESET_REG_VAL;
-	const uint8_t cfgValsBuff[3] = {MAG_CFG_REG_A_INIT_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 	uint8_t readBuff[6];
 
 	vTaskDelay(21);
@@ -36,7 +41,7 @@ MAG_StatusType magInit()
 	}
 	vTaskDelay(1);
 
-	if(MAG_OK != magWrite(MAG_CFG_REG_A, cfgValsBuff, 3))
+	if(MAG_OK != magWrite(MAG_CFG_REG_A, magCfgValsBuff, 3))
 	{
 		errorCntr++;
 	}
@@ -55,7 +60,6 @@ MAG_StatusType magInit()
 
 		xTaskCreate(&magReceiveTask, "MAG_RECEIVE", 256, NULL, MAG_RECEIVE_PRIO, &magReceiveTaskHandle);
 
-		HAL_NVIC_SetPriority(DRDY_MAG_EXTI_IRQn, 5, 0);
 		HAL_NVIC_EnableIRQ(DRDY_MAG_EXTI_IRQn);
 	}
 
@@ -116,6 +120,10 @@ MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t len)
 		{
 			retVal = MAG_OK;
 		}
+		else
+		{
+			HAL_GPIO_WritePin(CS_MAG_GPIO_Port, CS_MAG_Pin, SET);
+		}
 	}
 
 	for(uint8_t i = 0u; i < len; i++)
@@ -146,6 +154,10 @@ static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, 
 	{
 		retVal = MAG_OK;
 	}
+	else
+	{
+		HAL_GPIO_WritePin(CS_MAG_GPIO_Port, CS_MAG_Pin, SET);
+	}
 
 	return retVal;
 }
@@ -156,11 +168,15 @@ static void magReceiveTask(void *param)
 	uint16_t noDataDebounceCntr = 0u;
 	while(1)
 	{
-		if(300u > noDataDebounceCntr)
+		if(30u > noDataDebounceCntr)
 		{
 			if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 2))
 			{
-				magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+				if(MAG_OK != magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1))
+				{
+					magWrite(MAG_CFG_REG_A, magCfgValsBuff, 3);  // recover
+					magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
+				}
 				magWrite(MAG_CFG_REG_A, &startMeasurementRegVal, 1);
 				xSemaphoreGive(magHandleLockSemaphore);
 				uint32_t notified = ulTaskNotifyTake(pdTRUE, 10);
@@ -169,7 +185,7 @@ static void magReceiveTask(void *param)
 					if(pdTRUE == xSemaphoreTake(magHandleLockSemaphore, 3))
 					{
 						magRead(MAG_OUTX_L_REG, hmag0.rawDataBuff, 6);
-						wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
+//						wifiPutMessage(WIFI_MAG_DATA, hmag0.rawDataBuff, 6);
 						xSemaphoreGive(magHandleLockSemaphore);
 						noDataDebounceCntr = 0u;
 					}
@@ -216,8 +232,22 @@ MAG_StatusType magReadData(MAG_DataType *dataOut)
 		dataOut->y = (float)(-yRaw) * magConversionCoeff;  // transform to body coordinate system
 		dataOut->z = (float)zRaw * magConversionCoeff;
 
+		magCalibrate(dataOut);
+
 		retVal = MAG_OK;
 	}
 
 	return retVal;
+}
+
+static void magCalibrate(MAG_DataType *magData)
+{
+	// acc
+	float magXTemp = magData->x - magOffsets.x;
+	float magYTemp = magData->y - magOffsets.y;
+	float magZTemp = magData->z - magOffsets.z;
+
+	magData->x = magXTemp * magScaleMatrix[0][0] +  magYTemp * magScaleMatrix[0][1] +  magZTemp * magScaleMatrix[0][2];
+	magData->y = magXTemp * magScaleMatrix[1][0] +  magYTemp * magScaleMatrix[1][1] +  magZTemp * magScaleMatrix[1][2];
+	magData->z = magXTemp * magScaleMatrix[2][0] +  magYTemp * magScaleMatrix[2][1] +  magZTemp * magScaleMatrix[2][2];
 }

@@ -106,18 +106,18 @@ void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
   fuse.pGyroOffset[2] = 0.0F;
   fuse.pMagVec[2] = 0.0F;
   fuse.pMagVec[1] = 58.9373512F;
-  memset(&fuse.pQv[0], 0, 36U * sizeof(double));
+  memset(&fuse.pQv[0], 0, 36U * sizeof(float));
   for (i = 0; i < 3; i++) {
     i1 = iv[3 * i];
-    fuse.pQv[6 * i] = 0.001768994206994802 * (double)i1;
+    fuse.pQv[6 * i] = 0.001768994206994802 * (float)i1;
     i2 = 6 * (i + 3);
-    fuse.pQv[i2 + 3] = 0.73918104897564474 * (double)i1;
+    fuse.pQv[i2 + 3] = 0.73918104897564474 * (float)i1;
     i1 = iv[3 * i + 1];
-    fuse.pQv[6 * i + 1] = 0.001768994206994802 * (double)i1;
-    fuse.pQv[i2 + 4] = 0.73918104897564474 * (double)i1;
+    fuse.pQv[6 * i + 1] = 0.001768994206994802 * (float)i1;
+    fuse.pQv[i2 + 4] = 0.73918104897564474 * (float)i1;
     i1 = iv[3 * i + 2];
-    fuse.pQv[6 * i + 2] = 0.001768994206994802 * (double)i1;
-    fuse.pQv[i2 + 5] = 0.73918104897564474 * (double)i1;
+    fuse.pQv[6 * i + 2] = 0.001768994206994802 * (float)i1;
+    fuse.pQv[i2 + 5] = 0.73918104897564474 * (float)i1;
   }
   memcpy(&fuse.pQw[0], &fv[0], 144U * sizeof(float));
   fuse.pLinAccelPost[0] = 0.0F;

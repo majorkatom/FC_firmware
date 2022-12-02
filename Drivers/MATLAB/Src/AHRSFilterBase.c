@@ -39,8 +39,8 @@ void AHRSFilterBase_stepImpl(ahrsfilter *obj, const float accelIn[3],
 {
   static const int8_t b_iv[9] = {-1, 0, 0, 0, -1, 0, 0, 0, -1};
   quaternion qerr;
-  double a;
-  double a_tmp_tmp;
+  float a;
+  float a_tmp_tmp;
   float Ppost[144];
   float H[72];
   float b_tmp_tmp[72];

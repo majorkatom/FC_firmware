@@ -31,8 +31,6 @@ typedef enum RADIO_StatusType_ {
 	RADIO_UART_ERROR
 } RADIO_StatusType;
 
-extern UART_HandleTypeDef huart3;
-
 void radioInit();
 void radioUartRxCpltCallback(UART_HandleTypeDef *huart);
 void radioReadData(uint16_t *radioChannels);
