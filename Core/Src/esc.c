@@ -40,7 +40,7 @@ static uint16_t escMotorVal2Packet(uint16_t motorVal)
 	{
 		motorVal = 2000u;
 	}
-	if(motorVal)
+	if(0u != motorVal)
 	{
 		motorVal += 47u;
 	}
@@ -54,8 +54,7 @@ static uint16_t escMotorVal2Packet(uint16_t motorVal)
 
 static void escMotorBuffFill(uint16_t data, uint16_t *buffer)
 {
-	uint8_t i = 0u;
-	while(i < 16u)
+	for(uint8_t i = 0u;i < 16u;i++)
 	{
 		if(data & (0x8000 >> i))
 		{
@@ -65,7 +64,6 @@ static void escMotorBuffFill(uint16_t data, uint16_t *buffer)
 		{
 			buffer[i] = ESC_0_BIT;
 		}
-		i++;
 	}
 }
 

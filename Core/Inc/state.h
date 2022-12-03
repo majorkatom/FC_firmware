@@ -8,12 +8,6 @@
 #ifndef INC_STATE_H_
 #define INC_STATE_H_
 
-typedef struct STATE_OrientationDatatType_{
-	float pitch;	// rad
-	float roll;		// rad
-	float yawRate;	// rad/s
-} STATE_OrientationDatatType;
-
 typedef enum STATE_MainStateType_ {
 	STATE_DISARMED,
 	STATE_ARMED

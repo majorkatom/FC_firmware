@@ -23,7 +23,7 @@ extern "C" {
 
 /* Function Declarations */
 extern void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
-		STATE_OrientationDatatType *dataOut);
+		CTRL_OrientationDatatType *dataOut);
 
 #ifdef __cplusplus
 }

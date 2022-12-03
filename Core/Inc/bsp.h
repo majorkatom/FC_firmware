@@ -16,6 +16,7 @@
 #include "imu.h"
 #include "magneto.h"
 #include "wifi.h"
+#include "control.h"
 #include "state.h"
 
 #endif /* INC_BSP_H_ */

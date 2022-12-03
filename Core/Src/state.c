@@ -40,17 +40,18 @@ void stateSetState(STATE_MainStateType mainState, STATE_SubStateType subState)
 
 static void stateTask(void *param)
 {
-	RADIO_ChannelsType radioChannels = {.roll = 0u, .pitch = 0u, .throttle = 0u, .yaw = 0u, .arm = 0u};
-	RADIO_ChannelsType radioChannelsPrev = {.roll = 0u, .pitch = 0u, .throttle = 0u, .yaw = 0u, .arm = 0u};
+	RADIO_ChannelsType radioChannels = {.roll = 1500u, .pitch = 1500u, .throttle = 1000u, .yaw = 1500u, .arm = 0u};
 	IMU_DataType imuData;
 	MAG_DataType magData;
-	STATE_OrientationDatatType orientation;
+	CTRL_OrientationDatatType orientation;
+	CTRL_OrientationDatatType orientationPrev = {.pitch = 0.0f, .roll = 0.0f, .yawRate = 0.0f};
+	CTRL_MotorValsType motorVals;
 	uint8_t radioTxInSafeState = 0u;
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 
 	while(1)
 	{
-		vTaskDelayUntil(&xLastWakeTime, 10);
+		vTaskDelayUntil(&xLastWakeTime, CTRL_TIME_INTERVAL_MS);
 
 		switch(stateVariable.main)
 		{
@@ -121,10 +122,19 @@ static void stateTask(void *param)
 					{
 						IMU_StatusType imuReadRetVal = imuReadData(&imuData);
 						MAG_StatusType magReadRetVal = magReadData(&magData);
+						radioReadData(&radioChannels);
+
+						if(RADIO_MAX_CH_VAL != radioChannels.arm)
+						{
+							escSetMotorVals(0, 0, 0, 0);
+							stateVariable.main = STATE_DISARMED;
+						}
 
 						if((IMU_OK == imuReadRetVal) && (MAG_OK == magReadRetVal))
 						{
 							oriGetData(&imuData, &magData, &orientation);
+							ctrlGetMotorVals2Set(&motorVals, orientation, orientationPrev, radioChannels);
+							escSetMotorVals(motorVals.motor1, motorVals.motor2, motorVals.motor3, motorVals.motor4);
 
 							int16_t pitchInt = (int16_t)(orientation.pitch * stateRad2Deg);
 							int16_t rollInt = (int16_t)(orientation.roll  * stateRad2Deg);
@@ -137,28 +147,6 @@ static void stateTask(void *param)
 							oriBuffToSend[4] = yawRateInt >> 8;
 							oriBuffToSend[5] = yawRateInt & 0x00ff;
 							wifiPutMessage(WIFI_ORIENTATION, oriBuffToSend, 6);
-
-							RADIO_StatusType radioRetVal = radioReadData(&radioChannels);
-							if(RADIO_OK == radioRetVal)
-							{
-								if(RADIO_MAX_CH_VAL == radioChannels.arm)
-								{
-									// TODO: use actual radio channels
-								}
-								else
-								{
-									escSetMotorVals(0, 0, 0, 0);
-									stateVariable.main = STATE_DISARMED;
-								}
-							}
-							else
-							{
-								// TODO: use prev radio channels
-							}
-						}
-						else
-						{
-							radioReadData(&radioChannels);
 						}
 
 						break;
@@ -185,10 +173,8 @@ static void stateTask(void *param)
 			}
 		}
 
-		radioChannelsPrev.roll = radioChannels.roll;
-		radioChannelsPrev.pitch = radioChannels.pitch;
-		radioChannelsPrev.throttle = radioChannels.throttle;
-		radioChannelsPrev.yaw = radioChannelsPrev.yaw;
-		radioChannelsPrev.arm = radioChannelsPrev.arm;
+		orientationPrev.pitch = orientation.pitch;
+		orientationPrev.roll = orientation.roll;
+		orientationPrev.yawRate = orientation.yawRate;
 	}
 }

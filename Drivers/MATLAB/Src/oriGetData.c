@@ -25,7 +25,7 @@
  * Return Type  : void
  */
 void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
-		STATE_OrientationDatatType *dataOut)
+		CTRL_OrientationDatatType *dataOut)
 {
   static const float fv[144] = {
       6.09234849E-6F, 0.0F,           0.0F,           0.0F,
