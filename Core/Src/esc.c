@@ -206,3 +206,11 @@ void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim)
 		}
 	}
 }
+
+void escStopPWM()
+{
+	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
+}

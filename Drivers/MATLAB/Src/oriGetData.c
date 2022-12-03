@@ -84,10 +84,10 @@ void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
   fuse.MagneticDisturbanceDecayFactor = 0.5;
   fuse.GyroscopeDriftNoise = 3.0462E-13;
   fuse.LinearAccelerationDecayFactor = 0.5;
-  fuse.ExpectedMagneticFieldStrength = 58.9373515433;
-  fuse.AccelerometerNoise = 0.0012689939;
-  fuse.GyroscopeNoise = 3.069947716E-6;
-  fuse.MagnetometerNoise = 0.23918104866865;
+  fuse.ExpectedMagneticFieldStrength = 53.556450558511891;
+  fuse.AccelerometerNoise = 6.0149737456851264E-5;
+  fuse.GyroscopeNoise = 3.23167095313882E-6;
+  fuse.MagnetometerNoise = 0.37346829151995303;
   fuse.LinearAccelerationNoise = 0.0005;
   fuse.pInputPrototype[0] = imuData->accel.x;
   fuse.pInputPrototype[1] = imuData->accel.y;
@@ -105,19 +105,19 @@ void oriGetData(const IMU_DataType *imuData, const MAG_DataType *magData,
   fuse.pGyroOffset[1] = 0.0F;
   fuse.pGyroOffset[2] = 0.0F;
   fuse.pMagVec[2] = 0.0F;
-  fuse.pMagVec[1] = 58.9373512F;
+  fuse.pMagVec[1] = 53.5564499F;
   memset(&fuse.pQv[0], 0, 36U * sizeof(float));
   for (i = 0; i < 3; i++) {
     i1 = iv[3 * i];
-    fuse.pQv[6 * i] = 0.001768994206994802 * (float)i1;
+    fuse.pQv[6 * i] = 0.000560150060623977 * (float)i1;
     i2 = 6 * (i + 3);
-    fuse.pQv[i2 + 3] = 0.73918104897564474 * (float)i1;
+    fuse.pQv[i2 + 3] = 0.87346829184312014 * (float)i1;
     i1 = iv[3 * i + 1];
-    fuse.pQv[6 * i + 1] = 0.001768994206994802 * (float)i1;
-    fuse.pQv[i2 + 4] = 0.73918104897564474 * (float)i1;
+    fuse.pQv[6 * i + 1] = 0.000560150060623977 * (float)i1;
+    fuse.pQv[i2 + 4] = 0.87346829184312014 * (float)i1;
     i1 = iv[3 * i + 2];
-    fuse.pQv[6 * i + 2] = 0.001768994206994802 * (float)i1;
-    fuse.pQv[i2 + 5] = 0.73918104897564474 * (float)i1;
+    fuse.pQv[6 * i + 2] = 0.000560150060623977 * (float)i1;
+    fuse.pQv[i2 + 5] = 0.87346829184312014 * (float)i1;
   }
   memcpy(&fuse.pQw[0], &fv[0], 144U * sizeof(float));
   fuse.pLinAccelPost[0] = 0.0F;

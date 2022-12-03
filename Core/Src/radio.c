@@ -122,6 +122,7 @@ static void radioReceiveTask(void *param)
 					noDataDebounceCntr = 0u;
 					if((RADIO_MIN_CH_VAL == radioChannelsReceiveArray[RADIO_CH_IDX_ARM_SWC]) && (STATE_ARMED == stateGetMainState()))
 					{
+						escSetMotorVals(0, 0, 0, 0);
 						stateSetState(STATE_DISARMED, STATE_NORMAL_OPERATION);
 					}
 					radioChannelsPtr = radioChannelsReceiveArray;
@@ -136,7 +137,7 @@ static void radioReceiveTask(void *param)
 		}
 		else if(STATE_ARMED == stateGetMainState())
 		{
-			escSetMotorVals(0, 0, 0, 0);
+			escStopPWM();
 			stateSetState(STATE_DISARMED, STATE_RADIO_ERROR);
 		}
 	}

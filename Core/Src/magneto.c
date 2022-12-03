@@ -13,10 +13,10 @@ static MAG_HandleType hmag0;
 const uint8_t magCfgValsBuff[3] = {MAG_CFG_REG_A_INIT_VAL, MAG_CFG_REG_B_VAL, MAG_CFG_REG_C_VAL};
 static SemaphoreHandle_t magHandleLockSemaphore;
 static TaskHandle_t magReceiveTaskHandle = NULL;
-static const MAG_DataType magOffsets = {.x = 21.350651490437650, .y = -27.119178505878086, .z = -2.231146595581015};
-static const float magScaleMatrix[3][3] = {{1.10544608631976, -0.00982809963348214, 0.0236543410460084},
-											  {-0.00982809963348214, 1.12841523990916, 0.0158122395570343},
-											  {0.0236543410460084, 0.0158122395570343, 0.802461808581853}};
+static const MAG_DataType magOffsets = {.x = -17.662177579818167, .y = -10.273775677635934, .z = 55.149884780691890};
+static const float magScaleMatrix[3][3] = {{1.003989851105835, -1.561557387852464e-4, -0.008737941055190},
+											  {-1.561557387852464e-4, 1.006942966572786, 0.036916526658156},
+											  {-0.008737941055190, 0.036916526658156, 0.990587716987121}};
 
 static MAG_StatusType magRead(const uint8_t regAddrs, uint8_t *readBuff, uint8_t len);
 static MAG_StatusType magWrite(const uint8_t regAddrs,const uint8_t *writeBuff, uint8_t len);
@@ -206,7 +206,7 @@ static void magReceiveTask(void *param)
 		}
 		else
 		{
-			escSetMotorVals(0, 0, 0, 0);
+			escStopPWM();
 			stateSetState(STATE_DISARMED, STATE_MAG_ERROR);
 		}
 	}

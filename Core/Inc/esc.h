@@ -25,6 +25,7 @@ typedef enum ESC_HalfSelectorType_ {
 
 void escInit();
 void escSetMotorVals(uint16_t motorVal1, uint16_t motorVal2, uint16_t motorVal3, uint16_t motorVal4);
+void escStopPWM();
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim);
 

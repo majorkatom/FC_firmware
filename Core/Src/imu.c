@@ -50,6 +50,7 @@ IMU_StatusType imuInit()
 	imuDev.accel_cfg.power = BMI08X_ACCEL_PM_ACTIVE;
 	imuDev.accel_cfg.odr = BMI08X_ACCEL_ODR_100_HZ;
 	imuDev.accel_cfg.range = BMI088_ACCEL_RANGE_6G;
+	imuDev.accel_cfg.bw = BMI08X_ACCEL_BW_OSR4;
 
 	imuDev.gyro_cfg.power = BMI08X_GYRO_PM_NORMAL;
 	imuDev.gyro_cfg.odr = BMI08X_GYRO_BW_32_ODR_100_HZ;
@@ -285,7 +286,7 @@ static void imuAccReceiveTask(void *param)
 		}
 		else
 		{
-			escSetMotorVals(0, 0, 0, 0);
+			escStopPWM();
 			stateSetState(STATE_DISARMED, STATE_ACC_ERROR);
 		}
 	}
@@ -310,7 +311,7 @@ static void imuGyroReceiveTask(void *param)
 		}
 		else
 		{
-			escSetMotorVals(0, 0, 0, 0);
+			escStopPWM();
 			stateSetState(STATE_DISARMED, STATE_GYRO_ERROR);
 		}
 	}

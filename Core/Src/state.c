@@ -9,8 +9,9 @@
 #include "bsp.h"
 #include "oriGetData.h"
 
+extern IWDG_HandleTypeDef hiwdg;
 static STATE_StateType stateVariable = {.main = STATE_DISARMED, .sub = STATE_NORMAL_OPERATION};
-static const float stateRad2Deg = 180 / M_PI;
+//static const float stateRad2Deg = 180 / M_PI;
 
 static void stateTask(void *param);
 
@@ -52,6 +53,7 @@ static void stateTask(void *param)
 	while(1)
 	{
 		vTaskDelayUntil(&xLastWakeTime, CTRL_TIME_INTERVAL_MS);
+		HAL_IWDG_Refresh(&hiwdg);
 
 		switch(stateVariable.main)
 		{
@@ -136,35 +138,35 @@ static void stateTask(void *param)
 							ctrlGetMotorVals2Set(&motorVals, orientation, orientationPrev, radioChannels);
 							escSetMotorVals(motorVals.motor1, motorVals.motor2, motorVals.motor3, motorVals.motor4);
 
-							int16_t pitchInt = (int16_t)(orientation.pitch * stateRad2Deg);
-							int16_t rollInt = (int16_t)(orientation.roll  * stateRad2Deg);
-							int16_t yawRateInt = (int16_t)(orientation.yawRate * stateRad2Deg);
-							uint8_t oriBuffToSend[6];
-							oriBuffToSend[0] = pitchInt >> 8;
-							oriBuffToSend[1] = pitchInt & 0x00ff;
-							oriBuffToSend[2] = rollInt >> 8;
-							oriBuffToSend[3] = rollInt & 0x00ff;
-							oriBuffToSend[4] = yawRateInt >> 8;
-							oriBuffToSend[5] = yawRateInt & 0x00ff;
-							wifiPutMessage(WIFI_ORIENTATION, oriBuffToSend, 6);
+//							int16_t pitchInt = (int16_t)(orientation.pitch * stateRad2Deg);
+//							int16_t rollInt = (int16_t)(orientation.roll  * stateRad2Deg);
+//							int16_t yawRateInt = (int16_t)(orientation.yawRate * stateRad2Deg);
+//							uint8_t oriBuffToSend[6];
+//							oriBuffToSend[0] = pitchInt >> 8;
+//							oriBuffToSend[1] = pitchInt & 0x00ff;
+//							oriBuffToSend[2] = rollInt >> 8;
+//							oriBuffToSend[3] = rollInt & 0x00ff;
+//							oriBuffToSend[4] = yawRateInt >> 8;
+//							oriBuffToSend[5] = yawRateInt & 0x00ff;
+//							wifiPutMessage(WIFI_ORIENTATION, oriBuffToSend, 6);
 						}
 
 						break;
 					}
 					case STATE_ACC_ERROR:
-						escSetMotorVals(0, 0, 0, 0);
+						escStopPWM();
 						stateVariable.main = STATE_DISARMED;
 						break;
 					case STATE_GYRO_ERROR:
-						escSetMotorVals(0, 0, 0, 0);
+						escStopPWM();
 						stateVariable.main = STATE_DISARMED;
 						break;
 					case STATE_MAG_ERROR:
-						escSetMotorVals(0, 0, 0, 0);
+						escStopPWM();
 						stateVariable.main = STATE_DISARMED;
 						break;
 					case STATE_RADIO_ERROR:
-						escSetMotorVals(0, 0, 0, 0);
+						escStopPWM();
 						stateVariable.main = STATE_DISARMED;
 						break;
 				}

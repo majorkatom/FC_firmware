@@ -32,8 +32,8 @@ void ctrlGetMotorVals2Set(CTRL_MotorValsType *motorVals, CTRL_OrientationDatatTy
 	uint16_t motor3Val = (uint16_t)((int16_t)desiredThrottle - pitchCompensation + rollCompensation + yawRateCompensation);
 	uint16_t motor4Val = (uint16_t)((int16_t)desiredThrottle + pitchCompensation + rollCompensation - yawRateCompensation);
 
-	motorVals->motor1 = CTRL_IDLE_THROTTLE < motor1Val ? motor1Val : CTRL_IDLE_THROTTLE;
-	motorVals->motor2 = CTRL_IDLE_THROTTLE < motor2Val ? motor2Val : CTRL_IDLE_THROTTLE;
-	motorVals->motor3 = CTRL_IDLE_THROTTLE < motor3Val ? motor3Val : CTRL_IDLE_THROTTLE;
-	motorVals->motor4 = CTRL_IDLE_THROTTLE < motor4Val ? motor4Val : CTRL_IDLE_THROTTLE;
+	motorVals->motor1 = CTRL_MIN_THROTTLE < motor1Val ? motor1Val : CTRL_MIN_THROTTLE;
+	motorVals->motor2 = CTRL_MIN_THROTTLE < motor2Val ? motor2Val : CTRL_MIN_THROTTLE;
+	motorVals->motor3 = CTRL_MIN_THROTTLE < motor3Val ? motor3Val : CTRL_MIN_THROTTLE;
+	motorVals->motor4 = CTRL_MIN_THROTTLE < motor4Val ? motor4Val : CTRL_MIN_THROTTLE;
 }
